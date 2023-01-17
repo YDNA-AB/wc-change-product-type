@@ -1,9 +1,12 @@
-# wc-change-product-type
-Change the product type from simple to variation
+# Change the product type to variation
 
-Enables users to change product type to variation via the rest api.
+- Enables users to change product type to variation via the rest api.
+- It uses the standard woocommerce api authentication to authenticate the request.
 
-Send the array of products in the following format:
+It requires you to provide the `product_id` of the product you want to change and also the `parent_id` of the product that is supposed to be the parent.
+
+Send a POST request to https://yourdomain.com/wp-json/wc/v3/ydna/change-product-type
+Example body:
 ```json
 {
   "products": [
@@ -18,5 +21,3 @@ Send the array of products in the following format:
    ]
 }
 ```
-
-It uses the standard woocommerce api authentication to authenticate the request.
