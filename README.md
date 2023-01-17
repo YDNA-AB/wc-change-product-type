@@ -6,6 +6,7 @@
 It requires you to provide the `product_id` of the product you want to change and also the `parent_id` of the product that is supposed to be the parent.
 
 Send a POST request to https://yourdomain.com/wp-json/wc/v3/ydna/change-product-type
+
 Example body:
 ```json
 {
