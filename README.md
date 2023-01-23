@@ -28,6 +28,25 @@ type RequestBody = {
 }
 ```
 
+__Response body type definition:__
+
+```ts
+/** The request body (defined in TypeScript). */
+type ResponseBody = {
+  /** Array of product IDs of the products that were changed. */
+  changed: number[];
+  /** Array of product IDs of the products that were NOT changed. */
+  not_changed: number[];
+  /** Array of product IDs of the products that could not be updated. */
+  failed: {
+    /** The ID of the product. */
+    product_id: number;
+    /** A message describing what caused it to fail. */
+    message: string;
+  }[];
+}
+```
+
 __Example request body:__
 
 ```json
@@ -40,6 +59,29 @@ __Example request body:__
     {
       "product_id": 654,
       "parent_id": 321
+    },
+    {
+      "product_id": 4,
+      "parent_id": 99
+    }
+  ]
+}
+```
+
+__Example response body:__
+
+```json
+{
+  "changed": [
+    123
+  ],
+  "not_changed": [
+    654
+  ],
+  "failed": [
+    {
+      "product_id": 4,
+      "message": "some error message"
     }
   ]
 }
@@ -68,13 +110,52 @@ type RequestBody = {
 }
 ```
 
+__Response body type definition:__
+
+```ts
+/** The request body (defined in TypeScript). */
+type ResponseBody = {
+  /** Array of product IDs of the products that were changed. */
+  changed: number[];
+  /** Array of product IDs of the products that were NOT changed. */
+  not_changed: number[];
+  /** Array of product IDs of the products that could not be updated. */
+  failed: {
+    /** The ID of the product. */
+    product_id: number;
+    /** A message describing what caused it to fail. */
+    message: string;
+  }[];
+}
+```
+
 __Example request body:__
 
 ```json
 {
   "product_ids": [
     123,
+    654,
+    4
+  ]
+}
+```
+
+__Example response body:__
+
+```json
+{
+  "changed": [
+    123
+  ],
+  "not_changed": [
     654
+  ],
+  "failed": [
+    {
+      "product_id": 4,
+      "message": "some error message"
+    }
   ]
 }
 ```

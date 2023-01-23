@@ -1,8 +1,8 @@
 <?php
 /*
  * Plugin Name: Change Product Type WooCommerce
- * Description: Allows changing product type from simple to variation through the REST API.
- * Version: 0.0.3
+ * Description: Allows changing product type from simple to variation (and vice versa) through the REST API.
+ * Version: 0.0.4
  * Author: YDNA AB
  * URL: https://ydna.se/integrations/woo/plugins
 */
@@ -50,6 +50,9 @@ function change_product_type_callback( WP_REST_Request $request ) {
     }
 
     foreach ( $data['products'] as $index => $product ) {
+        // Make sure all fields are defined
+        // @TODO Make sure they are the correct type(s) as well!
+
         $missing_product_id = !isset($product['product_id']);
         $missing_parent_id  = !isset($product['parent_id']);
 
@@ -64,18 +67,26 @@ function change_product_type_callback( WP_REST_Request $request ) {
             // @TODO Make sure that the error code is correct.
             return new WP_Error( 'invalid_json', $error_str . ' is missing in the request body (or the value is of an invalid type). See "products[' . $index . ']".', array( 'status' => 400 ) );
         }
+
+        // @TODO Make sure no "product_id" is used more than once
+
+        // @TODO We probably need some safe-guarding against circular parents, or setting a variable to variation when it has children or something...
     }
 
     // Update products
 
+    $result_changed     = array();
+    $result_not_changed = array();
+    $result_failed      = array();
+
     global $wpdb;
     $table_name = $wpdb->prefix . 'posts';
-    $update_count = 0;
+
     foreach ( $data['products'] as $product ) {
         $product_id = $product['product_id'];
         $parent_id  = $product['parent_id'];
 
-        $update_count += $wpdb->update(
+        $current_update_count = $wpdb->update(
             $table_name,
             array( 
                 'post_parent' => $parent_id,
@@ -86,19 +97,35 @@ function change_product_type_callback( WP_REST_Request $request ) {
                 'post_type' => 'product'
             )
         );
-    }
 
-    if ( false === $update_count ) {
-        return new WP_Error( 'update_query_failed', 'Update query failed' . $wpdb->last_error, array( 'status' => 500 ) );
-    }
+        // @BUG What happens if it is a variable product with children? We probably have to change their parent or something...
 
-    if ( count($data['products']) !== $update_count ) {
-        return new WP_Error( 'update_query_failed', 'Update query failed, the number of updated rows is not equal to the number of products', array( 'status' => 500 ) );
+        // Product was changed (in the database)
+        if ( $current_update_count === 1 ) { // Change
+            array_push($result_changed, $product_id);
+        } else if ( $current_update_count === 0 ) { // No change
+            array_push($result_not_changed, $product_id);
+        } else if ( $current_update_count === false ) { // Failed
+            array_push($result_failed, array(
+                'product_id' => $product_id,
+                'message'    => 'Update query failed' . $wpdb->last_error,
+            ));
+        } else { // ???
+            // @TODO Unexepcted result (> 1 means that we selected too many, < 0 maybe never happens or is an error or something idk)
+            array_push($result_failed, array(
+                'product_id' => $product_id,
+                'message'    => 'Unexpected query result. Value: ' . $current_update_count, // @SECURITY Should we expose this value to the REST API users? Idk if it can contain anything secret :S
+            ));
+        }
     }
 
     // Success!
 
-    return true;
+    return array(
+        'changed'     => $result_changed,
+        'not_changed' => $result_not_changed,
+        'failed'      => $result_failed,
+    );
 }
 
 function change_product_type_to_simple_callback( WP_REST_Request $request ) {
@@ -127,11 +154,15 @@ function change_product_type_to_simple_callback( WP_REST_Request $request ) {
 
     // Update products
 
+    $result_changed     = array();
+    $result_not_changed = array();
+    $result_failed      = array();
+
     global $wpdb;
     $table_name = $wpdb->prefix . 'posts';
-    $update_count = 0;
+
     foreach ( $data['product_ids'] as $product_id ) {
-        $update_count += $wpdb->update(
+        $current_update_count = $wpdb->update(
             $table_name,
             array( 
                 'post_parent' => null,
@@ -142,19 +173,33 @@ function change_product_type_to_simple_callback( WP_REST_Request $request ) {
                 'post_type' => 'product_variation'
             )
         );
-    }
 
-    if ( false === $update_count ) {
-        return new WP_Error( 'update_query_failed', 'Update query failed' . $wpdb->last_error, array( 'status' => 500 ) );
-    }
-
-    if ( count($data['product_ids']) !== $update_count ) {
-        return new WP_Error( 'update_query_failed', 'Update query failed, the number of updated rows is not equal to the number of products', array( 'status' => 500 ) );
+        // Product was changed (in the database)
+        if ( $current_update_count === 1 ) { // Change
+            array_push($result_changed, $product_id);
+        } else if ( $current_update_count === 0 ) { // No change
+            array_push($result_not_changed, $product_id);
+        } else if ( $current_update_count === false ) { // Failed
+            array_push($result_failed, array(
+                'product_id' => $product_id,
+                'message'    => 'Update query failed' . $wpdb->last_error,
+            ));
+        } else { // ???
+            // @TODO Unexepcted result (> 1 means that we selected too many, < 0 maybe never happens or is an error or something idk)
+            array_push($result_failed, array(
+                'product_id' => $product_id,
+                'message'    => 'Unexpected query result. Value: ' . $current_update_count, // @SECURITY Should we expose this value to the REST API users? Idk if it can contain anything secret :S
+            ));
+        }
     }
 
     // Success!
 
-    return true;
+    return array(
+        'changed'     => $result_changed,
+        'not_changed' => $result_not_changed,
+        'failed'      => $result_failed,
+    );
 }
 
 ?>
