@@ -2,23 +2,23 @@
 /*
  * Plugin Name: Change Product Type WooCommerce
  * Description: Allows changing product type from simple to variation through the REST API.
- * Version: 0.0.2
+ * Version: 0.0.3
  * Author: YDNA AB
  * URL: https://ydna.se/integrations/woo/plugins
 */
 
-$name_space = 'wc/v3/ydna';
-
 add_action( 'rest_api_init', 'ydna_api_init' );
 
 function ydna_api_init() {
-    register_rest_route( $name_space, 'change-product-type', array(
+    $ydna_name_space = 'wc/v3/ydna';
+
+    register_rest_route( $ydna_name_space, 'change-product-type', array(
         'methods' => 'POST',
         'permission_callback' => 'authenticate_request',
         'callback' => 'change_product_type_callback',
     ) );
 
-    register_rest_route( $name_space, 'change-product-type-to-simple', array(
+    register_rest_route( $ydna_name_space, 'change-product-type-to-simple', array(
         'methods' => 'POST',
         'permission_callback' => 'authenticate_request',
         'callback' => 'change_product_type_to_simple_callback',
